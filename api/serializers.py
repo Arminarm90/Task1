@@ -2,10 +2,9 @@ from rest_framework import serializers
 from accounts.models import User
 from django.contrib.auth import authenticate
 from products.models import Category, Product
-from cart.models import  CartItem
+from cart.models import CartItem
 from django.shortcuts import get_object_or_404
 from django.db.models import Sum, F
-
 
 
 # User serializer
@@ -58,12 +57,14 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ("title", "image", "description", "status", "category")
-        
+
+
 # Cart
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = "__all__"
+
 
 # Cart
 class CartItemSerializer(serializers.ModelSerializer):
@@ -73,31 +74,27 @@ class CartItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ('id', 'quantity', 'product')
+        fields = ("id", "quantity", "total_price", "product")
 
 
 class CartItemAddSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField()
-    product_name = serializers.CharField(source="product.title", read_only=True)
-
 
     class Meta:
         model = CartItem
-        fields = ['quantity', 'product_id']
+        fields = ["quantity", "product_id"]
         extra_kwargs = {
-            'quantity': {'required': True},
-            'product_id': {'required': True},
+            "quantity": {"required": True},
+            "product_id": {"required": True},
             # 'total_price': {'required': True},
         }
-        
+
     def create(self, validated_data):
-        user = User.objects.get(id=self.context['request'].user.id)
-        product = get_object_or_404(Product, id=validated_data['product_id'])
+        user = User.objects.get(id=self.context["request"].user.id)
+        product = get_object_or_404(Product, id=validated_data["product_id"])
         cart_item = CartItem.objects.create(
-            product=product,
-            user=user,
-            quantity=validated_data['quantity']
-            )
+            product=product, user=user, quantity=validated_data["quantity"]
+        )
         cart_item.save()
         product.save()
         return cart_item
