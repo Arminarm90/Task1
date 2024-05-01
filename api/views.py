@@ -1,13 +1,11 @@
 from rest_framework import generics, viewsets, permissions
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from rest_framework import status
 from rest_framework.response import Response
 from accounts.models import User
 from products.models import Category, Product
-from cart.models import  CartItem
+from cart.models import CartItem
 from .serializers import UserSerializer
-from rest_framework.authtoken.models import Token
 from .serializers import (
     LoginSerializer,
     UserRegistrationSerializer,
@@ -15,19 +13,11 @@ from .serializers import (
     ProductCreateSerializer,
     CartItemAddSerializer,
     CartItemSerializer,
-    # ShoppingCartSerializer,
-    # CartItemSerializer,
-    # CartSerializer,
-    # AddCartItemSerializer,
-    # CartItemSerializer
 )
 from rest_framework import filters
-from django.contrib.auth import get_user_model
-from django.db.models import Sum, F
 from django.contrib.auth import authenticate
 # from rest_framework.authentication import TokenAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import AllowAny
@@ -35,7 +25,6 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
 
 
 
@@ -48,7 +37,8 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    
+
+
 # # Get cart
 # class CartListAPIView(generics.ListAPIView):
 #     queryset = Cart.objects.all()
@@ -119,9 +109,14 @@ class UserRegistrationAPIView(APIView):
         serializer = UserRegistrationSerializer(data=request.data)
         if serializer.is_valid():
             # Check if user exits
-            phone_number = serializer.validated_data['phone_number']
+            phone_number = serializer.validated_data["phone_number"]
             if User.objects.filter(phone_number=phone_number).exists():
-                return Response({'error': 'User with the provided username or email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response(
+                    {
+                        "error": "User with the provided username or email already exists"
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -131,6 +126,7 @@ class UserRegistrationAPIView(APIView):
 class UserDetailsAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
         user = request.user
         data = {
@@ -164,6 +160,7 @@ class TokenRefreshView(TokenRefreshView):
 #     queryset = Cart.objects.all()
 #     serializer_class = CartSerializer
 
+
 # cart
 class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.all()
@@ -171,11 +168,16 @@ class ProductViewSet(viewsets.ModelViewSet):
 
 
 class CartItemView(generics.ListAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = CartItemSerializer
-    permission_classes = (permissions.IsAuthenticated, )
+    # permission_classes = (permissions.IsAuthenticated, )
     filter_backends = [filters.SearchFilter]
     search_fields = [
-        'product__title', 'product__description', 'product__category__name']
+        "product__title",
+        "product__description",
+        "product__category__name",
+    ]
 
     def get_queryset(self):
         user = self.request.user
@@ -183,101 +185,9 @@ class CartItemView(generics.ListAPIView):
 
 
 class CartItemAddView(generics.CreateAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     queryset = CartItem.objects.all()
     serializer_class = CartItemAddSerializer
-    permission_classes = (permissions.IsAuthenticated, )
+    # permission_classes = (permissions.IsAuthenticated, )
 
-
-# User = get_user_model()
-# User = get_user_model()
-
-# class ShoppingCartViewSet(viewsets.ModelViewSet):
-#     queryset = ShoppingCart.objects.all()
-#     serializer_class = ShoppingCartSerializer
-
-#     def create(self, request, *args, **kwargs):
-#         phone_number = request.data.get('phone_number')
-#         if not phone_number:
-#             return Response({'error': 'User is not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
-#         cart, created = ShoppingCart.objects.get_or_create(phone_number=phone_number)
-#         product_id = request.data.get('product_id')
-#         quantity = request.data.get('quantity')
-#         product = Product.objects.get(pk=product_id)
-#         cart_item, created = CartItem.objects.get_or_create(
-#             shopping_cart=cart,
-#             product=product
-#         )
-#         cart_item.quantity = quantity
-#         cart_item.save()
-#         total_price = cart.products.aggregate(total_price=Sum(F('price') * F('cartitem__quantity')))['total_price']
-#         return Response({'total_price': total_price})
-# class CartView(APIView):
-#     def get(self, request):
-#         user = request.user
-#         cart_items = CartItem.objects.filter(user=user)
-#         total_price = sum(item.total_price() for item in cart_items)
-
-#         serializer = CartItemSerializer(cart_items, many=True)
-#         data = {
-#             'total_price': total_price,
-#             'items': serializer.data
-#         }
-#         return Response(data, status=status.HTTP_200_OK)
-
-#     def post(self, request):
-#         user = request.user
-#         data = request.data
-#         product_id = data.get('product_id')
-#         quantity = data.get('quantity', 1)
-
-#         try:
-#             product = Product.objects.get(pk=product_id)
-#         except Product.DoesNotExist:
-#             return Response({'error': 'Product not found'}, status=status.HTTP_404_NOT_FOUND)
-
-#         cart_item, created = CartItem.objects.get_or_create(user=user, product=product)
-#         cart_item.quantity += int(quantity)
-#         cart_item.save()
-# class CartView(generics.ListAPIView):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-
-# class AddToCartView(APIView):
-#     def post(self, request):
-#         product_id = request.data.get('product_id')
-#         quantity = request.data.get('quantity')
-
-#         if not product_id or not quantity:
-#             return Response({'error': 'Both product_id and quantity are required'}, status=status.HTTP_400_BAD_REQUEST)
-
-#         try:
-#             product = Product.objects.get(pk=product_id)
-#         except Product.DoesNotExist:
-#             return Response({'error': 'Product does not exist'}, status=status.HTTP_404_NOT_FOUND)
-
-#         cart, _ = Cart.objects.get_or_create(user=request.user)
-#         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-
-#         if not created:
-#             cart_item.quantity += int(quantity)
-#             cart_item.save()
-#         else:
-#             cart_item.quantity = int(quantity)
-#             cart_item.save()
-
-#         serializer = CartSerializer(cart)
-#         return Response(serializer.data)
-# class CartItemViewSet(ModelViewSet):
-    
-#     def get_queryset(self):
-#         return Cartitems.objects.filter(cart_id=self.kwargs["cart_pk"])
-    
-    
-#     def get_serializer_class(self):
-#         if self.request.method == "POST":
-#             return AddCartItemSerializer
-        
-#         return CartItemSerializer
-    
-#     def get_serializer_context(self):
-#         return {"cart_id": self.kwargs["cart_pk"]}
