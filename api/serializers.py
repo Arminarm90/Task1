@@ -65,7 +65,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = '__all__'
 
-
+# Cart
 class CartItemSerializer(serializers.ModelSerializer):
 
     product = ProductSerializer()
@@ -78,6 +78,7 @@ class CartItemSerializer(serializers.ModelSerializer):
 
 class CartItemAddSerializer(serializers.ModelSerializer):
     product_id = serializers.IntegerField()
+    product_name = serializers.CharField(source="product.title", read_only=True)
 
 
     class Meta:
@@ -89,11 +90,6 @@ class CartItemAddSerializer(serializers.ModelSerializer):
             # 'total_price': {'required': True},
         }
         
-    # def get_total_price(self, obj):
-    #     return obj.product.price * obj.quantity
-    
-    
-
     def create(self, validated_data):
         user = User.objects.get(id=self.context['request'].user.id)
         product = get_object_or_404(Product, id=validated_data['product_id'])

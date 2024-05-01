@@ -38,13 +38,6 @@ class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
-
-# # Get cart
-# class CartListAPIView(generics.ListAPIView):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-
-
 # Pagination product list
 class CustomPageNumberPagination(PageNumberPagination):
     page_size = 10
