@@ -82,19 +82,28 @@ class CartItemAddSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CartItem
-        fields = ["quantity", "product_id"]
+        fields = ["product_id", "quantity"]
         extra_kwargs = {
-            "quantity": {"required": True},
             "product_id": {"required": True},
-            # 'total_price': {'required': True},
+            "quantity": {"required": True},
         }
 
     def create(self, validated_data):
         user = User.objects.get(id=self.context["request"].user.id)
         product = get_object_or_404(Product, id=validated_data["product_id"])
         cart_item = CartItem.objects.create(
-            product=product, user=user, quantity=validated_data["quantity"]
+            product=product,
+            user=user,
+            quantity=validated_data["quantity"],
         )
         cart_item.save()
         product.save()
         return cart_item
+    
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        product_title = Product.objects.filter(id=instance.product_id).values_list('title', flat=True).first()
+        data['product_title'] = product_title
+        instance.save() 
+        data['total_price'] = instance.total_price
+        return data
