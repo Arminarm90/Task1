@@ -25,6 +25,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
+from django.shortcuts import get_object_or_404
 
 
 
@@ -184,3 +185,16 @@ class CartItemAddView(generics.CreateAPIView):
     serializer_class = CartItemAddSerializer
     # permission_classes = (permissions.IsAuthenticated, )
 
+class CartItemDelView(generics.DestroyAPIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    queryset = CartItem.objects.all()
+
+    def delete(self, request, pk, format=None):
+        user = request.user
+        cart_item = CartItem.objects.filter(user=user)
+        target_product = get_object_or_404(cart_item, pk=pk)
+        product = get_object_or_404(Product, id=target_product.product.id)
+        product.save()
+        target_product.delete()
+        return Response(status=status.HTTP_200_OK, data={"detail": "deleted"})
