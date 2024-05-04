@@ -33,9 +33,10 @@ from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 import requests
-import json
+# import json
 from zeep import Client
 from core.settings import MERCHANT
+import simplejson as json
 
 
 # User Api view
