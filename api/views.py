@@ -195,7 +195,7 @@ class CartItemAddView(generics.CreateAPIView):
     serializer_class = CartItemAddSerializer
     # permission_classes = (permissions.IsAuthenticated, )
 
-class AggregatedCartAPIView(APIView):
+class CartView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
     
@@ -243,7 +243,7 @@ amount = 1000  # Rial / Required
 description = "Description"  # Required
 phone = 'YOUR_PHONE_NUMBER'  # Optional
 # Important: need to edit for realy server.
-CallbackURL = 'http://127.0.0.1:8000/api/verify/'
+CallbackURL = 'http://127.0.0.1:8000/api/Cart/'
 class PaymentView(APIView):
 
     authentication_classes = [JWTAuthentication]
