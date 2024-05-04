@@ -13,9 +13,14 @@ from .serializers import (
     ProductCreateSerializer,
     CartItemAddSerializer,
     CartItemSerializer,
+    SendRequestSerializer,
+    VerifySerializer,
+    CombinedCartSerializer,
+    AggregatedCartSerializer,
 )
 from rest_framework import filters
 from django.contrib.auth import authenticate
+
 # from rest_framework.authentication import TokenAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
@@ -26,7 +31,11 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
-
+from django.conf import settings
+import requests
+import json
+from zeep import Client
+from core.settings import MERCHANT
 
 
 # User Api view
@@ -38,6 +47,7 @@ class UserListCreateAPIView(generics.ListCreateAPIView):
 class UserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
 
 # Pagination product list
 class CustomPageNumberPagination(PageNumberPagination):
@@ -185,16 +195,126 @@ class CartItemAddView(generics.CreateAPIView):
     serializer_class = CartItemAddSerializer
     # permission_classes = (permissions.IsAuthenticated, )
 
-class CartItemDelView(generics.DestroyAPIView):
+class AggregatedCartAPIView(APIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-    queryset = CartItem.objects.all()
-
-    def delete(self, request, pk, format=None):
+    
+    def get(self, request, format=None):
         user = request.user
-        cart_item = CartItem.objects.filter(user=user)
-        target_product = get_object_or_404(cart_item, pk=pk)
-        product = get_object_or_404(Product, id=target_product.product.id)
-        product.save()
-        target_product.delete()
-        return Response(status=status.HTTP_200_OK, data={"detail": "deleted"})
+        cart_items = CartItem.objects.filter(user=user)
+
+        total_price = sum(item.total_price for item in cart_items)
+
+        serializer = AggregatedCartSerializer({'cart_items': cart_items, 'total_price': total_price})
+        return Response(serializer.data)
+    
+
+class CartDeleteAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, cart_id, format=None):
+        user = request.user
+        cart = get_object_or_404(CartItem, id=cart_id)
+        if cart.user != user:
+            return Response(
+                {"error": "You are not authorized to delete this cart."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        cart.delete()
+        return Response(
+            {"message": "Cart deleted successfully."}, status=status.HTTP_204_NO_CONTENT
+        )
+
+
+# Zarinpall
+# ? sandbox merchant
+if settings.SANDBOX:
+    sandbox = "sandbox"
+else:
+    sandbox = "www"
+
+
+ZP_API_REQUEST = f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentRequest.json"
+ZP_API_VERIFY = (
+    f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentVerification.json"
+)
+ZP_API_STARTPAY = f"https://{sandbox}.zarinpal.com/pg/StartPay/"
+
+amount = 1000  # Rial / Required
+description = ""  # Required
+phone = "YOUR_PHONE_NUMBER"  # Optional
+# Important: need to edit for realy server.
+CallbackURL = "http://127.0.0.1:8000/api/"
+
+
+# ? sandbox merchant
+if settings.SANDBOX:
+    sandbox = 'sandbox'
+else:
+    sandbox = 'www'
+
+ZP_API_REQUEST = f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentRequest.json"
+ZP_API_VERIFY = f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentVerification.json"
+ZP_API_STARTPAY = f"https://{sandbox}.zarinpal.com/pg/StartPay/"
+
+amount = 1000  # Rial / Required
+description = "Description"  # Required
+phone = 'YOUR_PHONE_NUMBER'  # Optional
+# Important: need to edit for realy server.
+CallbackURL = 'http://127.0.0.1:8080/verify/'
+
+
+class PaymentView(APIView):
+
+    def post(self, request):
+        data = {
+            "MerchantID": settings.MERCHANT,
+            "Amount": amount,
+            "Description": description,
+            "Phone": phone,
+            "CallbackURL": CallbackURL,
+        }
+        data = json.dumps(data)
+        headers = {'content-type': 'application/json', 'content-length': str(len(data))}
+
+        try:
+            response = requests.post(ZP_API_REQUEST, data=data, headers=headers, timeout=10)
+            if response.status_code == 200:
+                response_data = response.json()
+                if response_data['Status'] == 100:
+                    return Response({
+                        'status': True,
+                        'payment_url': ZP_API_STARTPAY + str(response_data['Authority']),
+                        'authority': response_data['Authority']
+                    }, status=status.HTTP_200_OK)
+                else:
+                    return Response({'status': False, 'code': str(response_data['Status'])},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        except requests.exceptions.Timeout:
+            return Response({'status': False, 'code': 'timeout'}, status=status.HTTP_400_BAD_REQUEST)
+        except requests.exceptions.ConnectionError:
+            return Response({'status': False, 'code': 'connection error'}, status=status.HTTP_400_BAD_REQUEST)
+
+    def get(self, request):
+        authority = request.query_params.get('authority')
+        if authority:
+            data = {
+                "MerchantID": settings.MERCHANT,
+                "Amount": amount,
+                "Authority": authority,
+            }
+            data = json.dumps(data)
+            headers = {'content-type': 'application/json', 'content-length': str(len(data))}
+            response = requests.post(settings.ZP_API_VERIFY, data=data, headers=headers)
+            if response.status_code == 200:
+                response_data = response.json()
+                if response_data['Status'] == 100:
+                    return Response({'status': True, 'RefID': response_data['RefID']}, status=status.HTTP_200_OK)
+                else:
+                    return Response({'status': False, 'code': str(response_data['Status'])},
+                                    status=status.HTTP_400_BAD_REQUEST)
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'status': False, 'code': 'authority not provided'}, status=status.HTTP_400_BAD_REQUEST)
