@@ -230,26 +230,6 @@ class CartDeleteAPIView(APIView):
 # Zarinpall
 # ? sandbox merchant
 if settings.SANDBOX:
-    sandbox = "sandbox"
-else:
-    sandbox = "www"
-
-
-ZP_API_REQUEST = f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentRequest.json"
-ZP_API_VERIFY = (
-    f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentVerification.json"
-)
-ZP_API_STARTPAY = f"https://{sandbox}.zarinpal.com/pg/StartPay/"
-
-amount = 1000  # Rial / Required
-description = ""  # Required
-phone = "YOUR_PHONE_NUMBER"  # Optional
-# Important: need to edit for realy server.
-CallbackURL = "http://127.0.0.1:8000/api/"
-
-
-# ? sandbox merchant
-if settings.SANDBOX:
     sandbox = 'sandbox'
 else:
     sandbox = 'www'
@@ -257,17 +237,21 @@ else:
 ZP_API_REQUEST = f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentRequest.json"
 ZP_API_VERIFY = f"https://{sandbox}.zarinpal.com/pg/rest/WebGate/PaymentVerification.json"
 ZP_API_STARTPAY = f"https://{sandbox}.zarinpal.com/pg/StartPay/"
+        
 
 amount = 1000  # Rial / Required
 description = "Description"  # Required
 phone = 'YOUR_PHONE_NUMBER'  # Optional
 # Important: need to edit for realy server.
-CallbackURL = 'http://127.0.0.1:8080/verify/'
-
-
+CallbackURL = 'http://127.0.0.1:8000/api/verify/'
 class PaymentView(APIView):
 
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
     def post(self, request):
+        user = request.user
+        cart_items = CartItem.objects.filter(user=user)
+        amount = sum(item.total_price for item in cart_items)  # Rial / Required
         data = {
             "MerchantID": settings.MERCHANT,
             "Amount": amount,
@@ -298,6 +282,9 @@ class PaymentView(APIView):
             return Response({'status': False, 'code': 'connection error'}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
+        user = request.user
+        cart_items = CartItem.objects.filter(user=user)
+        amount = sum(item.total_price for item in cart_items)
         authority = request.query_params.get('authority')
         if authority:
             data = {
