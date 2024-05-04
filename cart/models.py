@@ -13,7 +13,7 @@ class CartItem(models.Model):
     
 
     def __str__(self):
-        return self.product.title
+        return f"Order for {self.user} : {self.product.title}"
     
     def save(self, *args, **kwargs):
         # Calculate total price
