@@ -244,7 +244,7 @@ amount = 1000  # Rial / Required
 description = "Description"  # Required
 phone = 'YOUR_PHONE_NUMBER'  # Optional
 # Important: need to edit for realy server.
-CallbackURL = 'http://127.0.0.1:8000/api/Cart/'
+CallbackURL = 'http://127.0.0.1:8000/api/payment/'
 class PaymentView(APIView):
 
     authentication_classes = [JWTAuthentication]
