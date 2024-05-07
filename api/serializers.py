@@ -59,7 +59,6 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         fields = ("title", "image", "description", "status", "category")
 
 
-# Cart
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
@@ -70,11 +69,15 @@ class ProductSerializer(serializers.ModelSerializer):
 class CartItemSerializer(serializers.ModelSerializer):
 
     product = ProductSerializer()
-    # total_price = sum(item.product.price * item.quantity for item in product)
 
     class Meta:
         model = CartItem
         fields = ("id", "quantity", "total_price", "product")
+
+
+class AggregatedCartSerializer(serializers.Serializer):
+    cart_items = CartItemSerializer(many=True)
+    total_price = serializers.DecimalField(max_digits=10, decimal_places=2)
 
 
 class CartItemAddSerializer(serializers.ModelSerializer):
@@ -99,11 +102,17 @@ class CartItemAddSerializer(serializers.ModelSerializer):
         cart_item.save()
         product.save()
         return cart_item
-    
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        product_title = Product.objects.filter(id=instance.product_id).values_list('title', flat=True).first()
-        data['product_title'] = product_title
-        instance.save() 
-        data['total_price'] = instance.total_price
+        product_title = (
+            Product.objects.filter(id=instance.product_id)
+            .values_list("title", flat=True)
+            .first()
+        )
+        data["product_title"] = product_title
+        instance.save()
+        data["total_price"] = instance.total_price
         return data
+
+

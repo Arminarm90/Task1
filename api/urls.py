@@ -11,7 +11,9 @@ from .views import (
     TokenRefreshView,
     CartItemView,
     CartItemAddView,
-    CartItemDelView,
+    CartDeleteAPIView,
+    PaymentView,
+    CartView,
 
 )
 
@@ -36,8 +38,13 @@ urlpatterns = [
     ),
     path("products/create/", ProductCreateAPIView.as_view(), name="create_product"),
     # cart api
-    path("cart/", CartItemView.as_view(), name="cart"),
+    path('cart/', CartView.as_view(), name='cart'),
+    path("cart-datail/", CartItemView.as_view(), name="cart-detail"),
     path("cart/add/", CartItemAddView.as_view(), name='cart-add'),
-    path('cart/delete/<int:pk>/', CartItemDelView.as_view(), name='card-delete'),
+    path('cart/delete/<int:cart_id>/', CartDeleteAPIView.as_view(), name='card-delete'),
+
+    # Zarinpal 
+    path('payment/', PaymentView.as_view(), name='payment'),
+
 
 ]
