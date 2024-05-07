@@ -12,10 +12,8 @@ from .views import (
     CartItemView,
     CartItemAddView,
     CartDeleteAPIView,
-    # SendRequestAPIView,
     PaymentView,
     CartView,
-    # CartItemDelView,
 
 )
 
@@ -46,7 +44,6 @@ urlpatterns = [
     path('cart/delete/<int:cart_id>/', CartDeleteAPIView.as_view(), name='card-delete'),
 
     # Zarinpal 
-    # path('payment/', PaymentView.as_view(), name='payment'),
     path('payment/', PaymentView.as_view(), name='payment'),
 
 

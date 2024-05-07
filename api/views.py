@@ -13,15 +13,10 @@ from .serializers import (
     ProductCreateSerializer,
     CartItemAddSerializer,
     CartItemSerializer,
-    SendRequestSerializer,
-    VerifySerializer,
-    CombinedCartSerializer,
     AggregatedCartSerializer,
 )
 from rest_framework import filters
 from django.contrib.auth import authenticate
-
-# from rest_framework.authentication import TokenAuthentication
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -33,8 +28,6 @@ from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from django.conf import settings
 import requests
-# import json
-from zeep import Client
 from core.settings import MERCHANT
 import simplejson as json
 
@@ -84,12 +77,6 @@ class LoginAPIView(APIView):
             password = serializer.validated_data["password"]
             user = authenticate(request, phone_number=phone_number, password=password)
             if user is not None:
-                # Authentication successful
-                # return Response(
-                #     {"message": "Authentication successful"}, status=status.HTTP_200_OK
-                # )
-                # token, created = Token.objects.get_or_create(user=user)
-                # return Response({'token': token.key}, status=status.HTTP_200_OK)
                 refresh = RefreshToken.for_user(user)
                 return Response(
                     {
@@ -159,12 +146,6 @@ class ProductCreateAPIView(APIView):
 # Get access token api
 class TokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
-
-
-# class CartViewSet(CreateModelMixin,RetrieveModelMixin, DestroyModelMixin, GenericViewSet):
-#     queryset = Cart.objects.all()
-#     serializer_class = CartSerializer
-
 
 # cart
 class ProductViewSet(viewsets.ModelViewSet):

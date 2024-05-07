@@ -69,7 +69,6 @@ class ProductSerializer(serializers.ModelSerializer):
 class CartItemSerializer(serializers.ModelSerializer):
 
     product = ProductSerializer()
-    # total_price = sum(item.product.price * item.quantity for item in product)
 
     class Meta:
         model = CartItem
@@ -117,34 +116,3 @@ class CartItemAddSerializer(serializers.ModelSerializer):
         return data
 
 
-class CombinedCartSerializer(serializers.Serializer):
-    cart_items = serializers.SerializerMethodField()
-    total_price = serializers.DecimalField(
-        max_digits=10, decimal_places=2, read_only=True
-    )
-
-    def get_cart_items(self, obj):
-        # obj here is the user instance
-        carts = (
-            obj.carts.all()
-        )  # assuming you have a related name for the carts in the user model
-        cart_items = CartItem.objects.filter(cart__in=carts)
-        return CartItemSerializer(cart_items, many=True).data
-
-
-# Zarinpall
-class SendRequestSerializer(serializers.ModelSerializer):
-    phone_number = serializers.CharField(source="user.phone_number", read_only=True)
-
-    class Meta:
-        model = CartItem
-        fields = [
-            "phone_number",
-            "total_price",
-        ]
-
-
-class VerifySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CartItem
-        fields = ["price", "user"]
