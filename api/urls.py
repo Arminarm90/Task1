@@ -1,7 +1,6 @@
 from django.urls import path, include
 from .views import (
     UserListCreateAPIView,
-    # CartListAPIView,
     UserRetrieveUpdateDestroyAPIView,
     LoginAPIView,
     UserRegistrationAPIView,
@@ -12,29 +11,11 @@ from .views import (
     TokenRefreshView,
     CartItemView,
     CartItemAddView,
-    # ProductViewSet,
-    # ShoppingCartViewSet,
-    # CartView,
-    # CartView,
-    # AddToCartView
+    CartDeleteAPIView,
+    PaymentView,
+    CartView,
+
 )
-from rest_framework.routers import DefaultRouter
-
-# from rest_framework.routers import DefaultRouter
-# from rest_framework_nested import routers
-# from . import views
-
-# router = routers.DefaultRouter()
-
-# router.register("carts", views.CartViewSet)
-
-
-# cart_router = routers.NestedDefaultRouter(router, "carts", lookup="cart")
-# cart_router.register("items", views.CartItemViewSet, basename="cart-items")
-
-# router = DefaultRouter()
-# router.register(r"products", ProductViewSet)
-# router.register(r"shopping_carts", ShoppingCartViewSet)
 
 urlpatterns = [
     # user api
@@ -57,14 +38,13 @@ urlpatterns = [
     ),
     path("products/create/", ProductCreateAPIView.as_view(), name="create_product"),
     # cart api
-    path("cart/", CartItemView.as_view(), name="cart"),
-    path("cart/add/", CartItemAddView.as_view()),
-    # path("", include(router.urls)),
-    # path('cart/', CartView.as_view(),name="cart"),
-    # path('cart/add/', AddToCartView.as_view(),name="cart-add"),
-    # path("", include(router.urls)),
-    # path("", include(cart_router.urls))
-    # path("cart/", CartListAPIView.as_view(), name="cart"),
-    # path("cart-items/", CartItemViewSet.as_view(), name="cart-items"),
-    # path("cart/", CartItemViewSet.as_view(), name="cart"),
+    path('cart/', CartView.as_view(), name='cart'),
+    path("cart-datail/", CartItemView.as_view(), name="cart-detail"),
+    path("cart/add/", CartItemAddView.as_view(), name='cart-add'),
+    path('cart/delete/<int:cart_id>/', CartDeleteAPIView.as_view(), name='card-delete'),
+
+    # Zarinpal 
+    path('payment/', PaymentView.as_view(), name='payment'),
+
+
 ]
